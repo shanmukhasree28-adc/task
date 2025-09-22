@@ -1,123 +1,317 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Resume Reviewer</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Resume Reviewer — Demo</title>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f9f9f9;
-      margin: 0;
-      padding: 2rem;
-      text-align: center;
-    }
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa5b1;--accent:#4f46e5;--success:#10b981}
+    *{box-sizing:border-box}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;margin:0;background:linear-gradient(180deg,#071027 0%,#071b2b 100%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .container{width:100%;max-width:980px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);border-radius:12px;padding:20px}
+    header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    header .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700}
+    h1{margin:0;font-size:20px}
+    p.lead{color:var(--muted);margin:6px 0 0}
 
-    h1 {
-      color: #333;
-    }
+    /* layout */
+    .split{display:grid;grid-template-columns:320px 1fr;gap:18px}
 
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
+    /* login */
+    form.login{display:flex;flex-direction:column;gap:10px}
+    label{font-size:13px;color:var(--muted)}
+    input[type=email],input[type=password],textarea{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:8px;color:inherit;width:100%}
+    .btn{background:var(--accent);border:none;padding:10px 12px;border-radius:8px;color:white;font-weight:600;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06)}
 
-    input[type="file"] {
-      margin: 1rem 0;
-    }
+    /* dashboard */
+    .uploader{display:flex;flex-direction:column;gap:8px}
+    .drop{border:2px dashed rgba(255,255,255,0.04);padding:18px;border-radius:10px;text-align:center;color:var(--muted)}
+    .stats{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;min-width:120px;text-align:center}
+    .suggestions{margin-top:10px}
+    .suggestions li{margin:6px 0;color:var(--muted)}
 
-    button {
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 16px;
-      cursor: pointer;
-    }
+    footer{margin-top:12px;color:var(--muted);font-size:13px}
 
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    .output {
-      margin-top: 2rem;
-      text-align: left;
-    }
-
-    .loader {
-      margin-top: 1rem;
-      font-style: italic;
-      color: gray;
-    }
+    /* small */
+    @media(max-width:880px){.split{grid-template-columns:1fr;}.container{padding:6px}}
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h1>AI Resume Reviewer</h1>
-    <p>Upload your resume and get instant AI feedback.</p>
+    <div class="card">
+      <header>
+        <div class="logo">AI</div>
+        <div>
+          <h1>AI Resume Reviewer (Demo)</h1>
+          <p class="lead">Upload or paste your resume and get an instant checklist + score. (Local demo — no server required.)</p>
+        </div>
+      </header>
 
-    <input type="file" id="resumeInput" accept=".pdf,.docx" />
-    <br>
-    <button onclick="analyzeResume()">Analyze Resume</button>
+      <div class="split">
+        <!-- LEFT: login / user panel -->
+        <div>
+          <section id="authPanel" class="card" style="padding:14px;">
+            <h3 style="margin:0 0 8px 0">Login</h3>
+            <form id="loginForm" class="login">
+              <div>
+                <label for="email">Email</label>
+                <input id="email" type="email" placeholder="you@example.com" required />
+              </div>
+              <div>
+                <label for="password">Password</label>
+                <input id="password" type="password" placeholder="••••••••" required />
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="btn" type="submit">Sign in</button>
+                <button id="demoBtn" type="button" class="btn ghost">Use demo</button>
+              </div>
+              <small style="color:var(--muted)">This demo uses a simple client-side "login" — do not use real credentials.</small>
+            </form>
+            <div id="welcome" style="display:none;margin-top:12px">
+              <strong>Welcome, <span id="userName">User</span></strong>
+              <div style="margin-top:8px"><button id="logout" class="btn ghost">Logout</button></div>
+            </div>
+          </section>
 
-    <div class="loader" id="loading" style="display: none;">Analyzing resume with AI...</div>
+          <section style="margin-top:12px;padding:12px;background:transparent">
+            <h4 style="margin:0 0 8px 0">How it works</h4>
+            <ol style="color:var(--muted);padding-left:18px;margin:0">
+              <li>Log in (demo mode available).</li>
+              <li>Upload a resume file or paste text.</li>
+              <li>AI checks for contact info, skills, experience, keywords and gives suggestions.</li>
+            </ol>
+          </section>
+        </div>
 
-    <div class="output" id="reviewOutput" style="display: none;">
-      <h3>Review Summary:</h3>
-      <ul id="reviewList">
-        <!-- Feedback items will be inserted here -->
-      </ul>
+        <!-- RIGHT: uploader / results -->
+        <div>
+          <div id="dashboard" style="display:none">
+            <section class="card" style="padding:14px;">
+              <h3 style="margin-top:0">Review your resume</h3>
+              <div class="uploader">
+                <label class="drop" id="dropArea">Drag & drop a .txt or paste text here, or use the file input
+                  <div style="margin-top:8px">
+                    <input id="fileInput" type="file" accept=".txt,.md,.doc,.docx,.pdf,text/plain" />
+                  </div>
+                </label>
+
+                <label for="paste">Or paste your resume text</label>
+                <textarea id="paste" rows="8" placeholder="Paste resume text here..."></textarea>
+
+                <div style="display:flex;gap:8px;align-items:center">
+                  <button id="analyzeBtn" class="btn">Analyze</button>
+                  <button id="clearBtn" class="btn ghost">Clear</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="card" style="padding:14px;margin-top:12px">
+              <h4 style="margin:0 0 10px 0">Score & Suggestions</h4>
+              <div class="stats" id="scoreBox">
+                <!-- dynamic stats -->
+              </div>
+
+              <div style="margin-top:12px">
+                <h5 style="margin:0">Highlights</h5>
+                <ul id="highlights" class="suggestions"></ul>
+              </div>
+
+              <div style="margin-top:12px">
+                <h5 style="margin:0">Actionable suggestions</h5>
+                <ul id="suggestions" class="suggestions"></ul>
+              </div>
+            </section>
+
+            <footer>
+              <small>Demo only. For production replace the local analyzer with a secure backend and a real NLP/LLM API.</small>
+            </footer>
+          </div>
+
+          <div id="pleaseLogin" class="card" style="padding:14px;">
+            <p style="margin:0;color:var(--muted)">Please sign in (or use demo) to open the resume reviewer dashboard.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    function analyzeResume() {
-      const fileInput = document.getElementById('resumeInput');
-      const loading = document.getElementById('loading');
-      const output = document.getElementById('reviewOutput');
-      const reviewList = document.getElementById('reviewList');
+    // ---------- Auth (client-side demo only) ----------
+    const loginForm = document.getElementById('loginForm');
+    const demoBtn = document.getElementById('demoBtn');
+    const authPanel = document.getElementById('authPanel');
+    const welcome = document.getElementById('welcome');
+    const userNameSpan = document.getElementById('userName');
+    const logoutBtn = document.getElementById('logout');
+    const dashboard = document.getElementById('dashboard');
+    const pleaseLogin = document.getElementById('pleaseLogin');
 
-      if (!fileInput.files.length) {
-        alert("Please upload a resume first.");
-        return;
+    function showDashboard(name){
+      userNameSpan.textContent = name || 'User';
+      loginForm.style.display='none';
+      welcome.style.display='block';
+      dashboard.style.display='block';
+      pleaseLogin.style.display='none';
+    }
+    function hideDashboard(){
+      loginForm.style.display='flex';
+      welcome.style.display='none';
+      dashboard.style.display='none';
+      pleaseLogin.style.display='block';
+    }
+
+    loginForm.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      // naive username
+      const name = email.split('@')[0] || 'User';
+      // NOTE: don't check real credentials here in demo
+      showDashboard(capitalize(name));
+    });
+    demoBtn.addEventListener('click', ()=> showDashboard('Demo'));
+    logoutBtn.addEventListener('click', ()=> hideDashboard());
+
+    function capitalize(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+
+    // ---------- File / paste handling ----------
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const paste = document.getElementById('paste');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const scoreBox = document.getElementById('scoreBox');
+    const highlights = document.getElementById('highlights');
+    const suggestions = document.getElementById('suggestions');
+
+    dropArea.addEventListener('dragover', e=>{e.preventDefault(); dropArea.style.borderColor='rgba(255,255,255,0.12)'});
+    dropArea.addEventListener('dragleave', e=>{dropArea.style.borderColor='';});
+    dropArea.addEventListener('drop', e=>{
+      e.preventDefault(); dropArea.style.borderColor='';
+      const f = e.dataTransfer.files[0];
+      if(f) readFile(f);
+    });
+    fileInput.addEventListener('change', ()=>{ const f = fileInput.files[0]; if(f) readFile(f); });
+
+    clearBtn.addEventListener('click', ()=>{ paste.value=''; scoreBox.innerHTML=''; highlights.innerHTML=''; suggestions.innerHTML=''; });
+
+    // Read plain text files. For PDFs/DOCX this demo asks the user to paste text instead.
+    function readFile(file){
+      if(file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')){
+        const r = new FileReader();
+        r.onload = ()=>{ paste.value = r.result; };
+        r.readAsText(file);
+      } else {
+        alert('This demo can only automatically read plain text (.txt, .md). For PDF/DOCX please open your resume and copy-paste the text into the box.');
+      }
+    }
+
+    // ---------- Simple "AI" analyzer (local) ----------
+    analyzeBtn.addEventListener('click', ()=>{
+      const text = (paste.value || '').trim();
+      if(!text){ alert('Please paste your resume text or upload a .txt file.'); return; }
+      const report = analyzeResume(text);
+      renderReport(report);
+    });
+
+    function analyzeResume(text){
+      // normalize
+      const lower = text.toLowerCase();
+      const words = lower.split(/\s+/).filter(Boolean);
+
+      // checks
+      const hasEmail = /[\w.-]+@[\w.-]+\.[a-z]{2,}/.test(lower);
+      const hasPhone = /(?:\+?\d{1,3}[\s-])?(?:\d{10}|\d{3}[\s-]\d{3}[\s-]\d{4})/.test(text);
+      const hasSkills = /skills?:|technologies:|tech stack|proficiencies:|languages:/.test(lower) || /javascript|python|java|sql|react|node|c\+\+/.test(lower);
+      const hasEducation = /education:|bachelor|master|bs\.|ms\.|b\.tech|m\.tech|university|college/.test(lower);
+      const experienceMatches = text.match(/\b(\d+)\+?\s+years?\b/gi) || [];
+      const totalWords = words.length;
+      const actionVerbs = ['led','created','improved','built','designed','implemented','managed','optimized','reduced','increased','developed'];
+      const foundAction = actionVerbs.filter(v=> lower.includes('\b'+v+'\b')).length;
+
+      // keywords heuristic: take first line as target job if user included
+      const firstLine = text.split('\n')[0] || '';
+      const likelyTitle = firstLine.length < 80 ? firstLine : '';
+
+      // scoring: simple weighted heuristics
+      let score = 50;
+      if(hasEmail) score += 10; else score -= 8;
+      if(hasPhone) score += 10; else score -= 8;
+      if(hasSkills) score += 8;
+      if(hasEducation) score += 6;
+      score += Math.min(15, foundAction * 3);
+      score += Math.min(10, experienceMatches.length * 4);
+      // length penalty / bonus
+      if(totalWords < 200) score -= 10; // too short
+      if(totalWords > 1600) score -= 8; // too long
+      if(score > 95) score = 95;
+      if(score < 12) score = 12;
+
+      // suggestions and highlights
+      const suggestions = [];
+      const highlights = [];
+      if(hasEmail) highlights.push('Email found'); else suggestions.push('Add a professional email address (example: name@example.com).');
+      if(hasPhone) highlights.push('Phone number found'); else suggestions.push('Add a contact phone number with country code if relevant.');
+      if(hasSkills) highlights.push('Skills / technologies section present'); else suggestions.push('Add a dedicated Skills or Technologies section listing tools, languages, frameworks.');
+      if(foundAction>0) highlights.push('Action-oriented bullets detected'); else suggestions.push('Use action verbs (managed, built, improved) to describe accomplishments.');
+      if(totalWords < 200) suggestions.push('Your resume looks short — consider expanding project or experience details to reach ~400–800 words for mid-level roles.');
+      if(totalWords > 1600) suggestions.push('Consider trimming less relevant content — aim for concise bullets and remove old/irrelevant roles.');
+      if(!likelyTitle) suggestions.push('Include a clear title or target role at the top (e.g., "Backend Developer", "Data Scientist").');
+      if(!/\b(achieved|reduced|increased|improved|saved)\b/.test(lower)) suggestions.push('Where possible, add measurable impact (percentages, numbers, time saved).');
+      if(!/\b(skills|projects|experience|education)\b/.test(lower)) suggestions.push('Organize into clear sections: Summary/Title, Skills, Experience, Projects, Education.');
+
+      // example tailored tip: if title contains 'engineer' look for computer keywords
+      const tailored = [];
+      if(/engineer|developer|software/.test(lower)){
+        if(!/unit test|jira|ci|docker|kubernetes|aws|gcp|azure/.test(lower)) suggestions.push('For software roles, mention relevant tools (Git, CI/CD, Docker, cloud).');
+        tailored.push('Detected software/engineering role — focus on technical tools, metrics, and project outcomes.');
       }
 
-      loading.style.display = 'block';
-      output.style.display = 'none';
-      reviewList.innerHTML = '';
-
-      // Simulate AI processing delay
-      setTimeout(() => {
-        loading.style.display = 'none';
-        output.style.display = 'block';
-
-        const fakeFeedback = [
-          "Great use of action verbs in work experience section.",
-          "Consider quantifying more achievements (e.g., 'increased sales by 30%').",
-          "Add more technical keywords to improve ATS compatibility.",
-          "Resume is well-structured and easy to read.",
-          "Consider adding a short summary at the top."
-        ];
-
-        fakeFeedback.forEach(item => {
-          const li = document.createElement('li');
-          li.textContent = item;
-          reviewList.appendChild(li);
-        });
-
-      }, 2000);
+      return {
+        score: Math.round(score),
+        totalWords,
+        hasEmail, hasPhone, hasSkills, hasEducation,
+        foundAction, experienceCount: experienceMatches.length,
+        highlights, suggestions, tailored, likelyTitle
+      };
     }
-  </script>
 
+    function renderReport(r){
+      scoreBox.innerHTML = `
+        <div class="stat">
+          <div style="font-size:22px;font-weight:700">${r.score}</div>
+          <div style="font-size:12px;color:var(--muted)">AI Score (out of 100)</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:18px;font-weight:700">${r.totalWords}</div>
+          <div style="font-size:12px;color:var(--muted)">Words</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:18px;font-weight:700">${r.experienceCount}</div>
+          <div style="font-size:12px;color:var(--muted)">"Years" mentions</div>
+        </div>
+        <div class="stat">
+          <div style="font-size:18px;font-weight:700">${r.foundAction}</div>
+          <div style="font-size:12px;color:var(--muted)">Action verbs</div>
+        </div>
+      `;
+
+      highlights.innerHTML = r.highlights.map(s=>`<li>${escapeHtml(s)}</li>`).join('') || '<li style="color:var(--muted)">No highlights detected</li>';
+      let suggs = r.suggestions.slice();
+      if(r.tailored) suggs = suggs.concat(r.tailored);
+      suggestions.innerHTML = suggs.map(s=>`<li>${escapeHtml(s)}</li>`).join('');
+    }
+
+    function escapeHtml(s){ return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+    // Ensure initial state
+    hideDashboard();
+  </script>
 </body>
 </html>
+    
 
-      
-      
+  
      

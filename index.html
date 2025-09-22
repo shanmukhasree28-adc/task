@@ -1,76 +1,91 @@
-  <div className="App">
-      <h1>Food Delivery App</h1>
+// client/src/App.js
+import React, { useState, useEffect } from 'react';
+import './App.css';
 
-      <h2>Menu</h2>
-      <div className="menu">
-        {foodItems.map((food) => (
-          <div key={food.id} className="menu-item">
-            <h3>{food.name}</h3>
-            <p>${food.price}</p>
-            <button onClick={() => addToCart(food)}>Add to Cart</button>
-          </div>
+function App() {
+  const [feedbacks, setFeedbacks] = useState([]);
+  const [message, setMessage] = useState('');
+
+  // Fetch feedbacks
+  useEffect(() => {
+    fetch('http://localhost:5000/api/feedback')
+      .then(res => res.json())
+      .then(data => setFeedbacks(data));
+  }, []);
+
+  // Handle form submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    const res = await fetch('http://localhost:5000/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    });
+
+    const newFeedback = await res.json();
+    setFeedbacks(prev => [newFeedback, ...prev]);
+    setMessage('');
+  };
+
+  return (
+    <div className="App">
+      <h1>Quick Feedback</h1>
+      <form onSubmit={handleSubmit}>
+        <textarea
+          placeholder="Enter your feedback here..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+        <button type="submit">Submit Feedback</button>
+      </form>
+
+      <h2>All Feedback</h2>
+      <ul>
+        {feedbacks.map((fb) => (
+          <li key={fb.id}>{fb.message}</li>
         ))}
-      </div>
-
-      <h2>Cart</h2>
-      <div className="cart">
-        {cart.length === 0 ? (
-          <p>Your cart is empty</p>
-        ) : (
-          cart.map((food, index) => (
-            <div key={index}>
-              <p>{food.name} - ${food.price}</p>
-            </div>
-          ))
-        )}
-      </div>
+      </ul>
     </div>
   );
 }
 
 export default App;
-/* src/App.css */
+/* client/src/App.css */
 .App {
-  text-align: center;
   font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 2rem;
 }
 
-.menu {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.menu-item {
-  background-color: #f4f4f4;
-  padding: 20px;
-  margin: 15px;
-  width: 200px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.menu-item h3 {
-  margin: 0;
+textarea {
+  width: 60%;
+  height: 100px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 16px;
+  resize: none;
 }
 
 button {
-  padding: 8px 12px;
-  background-color: #4caf50;
+  padding: 10px 20px;
+  background-color: #007bff;
   border: none;
   color: white;
+  font-size: 16px;
   cursor: pointer;
-  border-radius: 4px;
 }
 
-button:hover {
-  background-color: #45a049;
+ul {
+  list-style-type: none;
+  padding: 0;
 }
 
-.cart {
-  margin-top: 20px;
-}
-
-.cart p {
-  margin: 5px 0;
+li {
+  background: #f1f1f1;
+  margin: 8px auto;
+  padding: 10px;
+  width: 60%;
+  border-radius: 5px;
 }

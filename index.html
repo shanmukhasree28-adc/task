@@ -1,0 +1,130 @@
+mkdir food-delivery-app
+cd food-delivery-app
+npm init -y
+
+// server.js
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+
+// Dummy food data (replace with database in real-world applications)
+const foodItems = [
+  { id: 1, name: 'Pizza', price: 10.99 },
+  { id: 2, name: 'Burger', price: 5.99 },
+  { id: 3, name: 'Sushi', price: 12.99 },
+  { id: 4, name: 'Pasta', price: 8.99 },
+];
+
+// Routes
+app.get('/api/foods', (req, res) => {
+  res.json(foodItems);
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+// src/App.js
+import React, { useEffect, useState } from 'react';
+import './App.css';
+
+function App() {
+  const [foodItems, setFoodItems] = useState([]);
+  const [cart, setCart] = useState([]);
+
+  // Fetch food data from the backend
+  useEffect(() => {
+    fetch('http://localhost:5000/api/foods')
+      .then((response) => response.json())
+      .then((data) => setFoodItems(data))
+      .catch((err) => console.error('Error fetching food items:', err));
+  }, []);
+
+  // Add item to the cart
+  const addToCart = (food) => {
+    setCart((prevCart) => [...prevCart, food]);
+  };
+
+  return (
+    <div className="App">
+      <h1>Food Delivery App</h1>
+
+      <h2>Menu</h2>
+      <div className="menu">
+        {foodItems.map((food) => (
+          <div key={food.id} className="menu-item">
+            <h3>{food.name}</h3>
+            <p>${food.price}</p>
+            <button onClick={() => addToCart(food)}>Add to Cart</button>
+          </div>
+        ))}
+      </div>
+
+      <h2>Cart</h2>
+      <div className="cart">
+        {cart.length === 0 ? (
+          <p>Your cart is empty</p>
+        ) : (
+          cart.map((food, index) => (
+            <div key={index}>
+              <p>{food.name} - ${food.price}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+/* src/App.css */
+.App {
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+.menu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.menu-item {
+  background-color: #f4f4f4;
+  padding: 20px;
+  margin: 15px;
+  width: 200px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.menu-item h3 {
+  margin: 0;
+}
+
+button {
+  padding: 8px 12px;
+  background-color: #4caf50;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+.cart {
+  margin-top: 20px;
+}
+
+.cart p {
+  margin: 5px 0;
+}
